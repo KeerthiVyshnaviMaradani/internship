@@ -205,6 +205,8 @@
   </div>
 
   <script type="module">
+    import { firebaseConfig } from "../config.js";
+    
     (async () => {
       // Check for required DOM elements first
       const table = document.getElementById("appointmentTable");
@@ -229,15 +231,7 @@
         const { getFirestore, collection, getDocs, query, where } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
         const { getAuth, signOut, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
 
-        const firebaseConfig = {
-          apiKey: "AIzaSyDRqIY5_KSXU6FUF23pBr6AJfR9oYu3A_w",
-          authDomain: "stu-teach-booking-appointment.firebaseapp.com",
-          projectId: "stu-teach-booking-appointment",
-          storageBucket: "stu-teach-booking-appointment.appspot.com",
-          messagingSenderId: "911059619353",
-          appId: "1:911059619353:web:3ec6ee920276da87b6a488",
-          measurementId: "G-L0L8ET89ZD"
-        };
+        
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);

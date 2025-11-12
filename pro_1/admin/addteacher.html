@@ -294,16 +294,7 @@
       orderBy
     } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-    // ==== REPLACE WITH YOUR FIREBASE CONFIG IF NEEDED ====
-    const firebaseConfig = {
-      apiKey: "AIzaSyDRqIY5_KSXU6FUF23pBr6AJfR9oYu3A_w",
-      authDomain: "stu-teach-booking-appointment.firebaseapp.com",
-      projectId: "stu-teach-booking-appointment",
-      storageBucket: "stu-teach-booking-appointment.appspot.com",
-      messagingSenderId: "911059619353",
-      appId: "1:911059619353:web:3ec6ee920276da87b6a488"
-    };
-    // ======================================================
+    import { firebaseConfig } from "../config.js";
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
