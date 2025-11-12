@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Approved Appointments</title>
+  <style>
+    :root {
+      --primary: #556ee6;
+      --bg: #f0f4f8;
+      --card: #fff;
+      --muted: #666;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg);
+      margin: 0;
+      min-height: 100vh;
+    }
+
+    /* NAVBAR */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+      background: linear-gradient(90deg, var(--primary), #4751d6);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(21,34,92,0.12);
+      z-index: 1000;
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand {
+      font-weight: 700;
+      font-size: 18px;
+      letter-spacing: 0.2px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 12px;
+      margin-left: 12px;
+    }
+
+    .nav-links a {
+      color: rgba(255,255,255,0.95);
+      text-decoration: none;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .nav-links a:hover {
+      background: rgba(255,255,255,0.07);
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .user-chip {
+      display: inline-block;
+      padding: 6px 10px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 20px;
+      font-size: 13px;
+      color: #fff;
+    }
+
+    .btn-logout {
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .btn-logout:hover {
+      background: rgba(255,255,255,0.18);
+    }
+
+    /* MAIN */
+    .wrapper {
+      padding: 90px 20px 40px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .container {
+      background: var(--card);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      width: 100%;
+      max-width: 950px;
+    }
+
+    h2 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 18px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+    }
+
+    th, td {
+      padding: 12px 15px;
+      text-align: center;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+    }
+
+    th {
+      background-color: var(--primary);
+      color: white;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    tr:nth-child(even) {
+      background-color: #fbfcff;
+    }
+
+    tr:hover {
+      background-color: #f1f6ff;
+    }
+
+    .status {
+      font-weight: 700;
+    }
+
+    .approved {
+      color: green;
+    }
+
+    .no-data {
+      text-align: center;
+      color: var(--muted);
+      padding: 15px;
+      font-size: 15px;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-left">
+      <div class="brand">StuTeach Booking</div>
+      <div class="nav-links">
+        <a href="approveappoint.html">Appointments</a>
+        <a href="scheduleappoint.html">Students</a>
+        <a href="#">Teachers</a>
+      </div>
+    </div>
+
+    <div class="nav-right">
+      <div id="userEmail" class="user-chip">Guest</div>
+      <button id="logoutBtn" class="btn-logout">Logout</button>
+    </div>
+  </nav>
+
+  <div class="wrapper">
+    <div class="container">
+      <h2>✅ Approved Appointments</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Student Name</th>
+            <th>Teacher</th>
+            <th>Email</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="appointmentTable">
+          <tr><td colspan="6" class="no-data">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script type="module">
+    (async () => {
+      // Check for required DOM elements first
+      const table = document.getElementById("appointmentTable");
+      const logoutBtn = document.getElementById("logoutBtn");
+      const userEmailEl = document.getElementById("userEmail");
+
+      if (!table || !logoutBtn || !userEmailEl) {
+        console.error("Required DOM elements are missing from the page.");
+        return;
+      }
+
+      // If the page is opened via file:// many browsers block module imports;
+      // show a clear message instructing to use a local server.
+      if (window.location.protocol === "file:") {
+        table.innerHTML = `<tr><td colspan="6" class="no-data">Error: This page must be served over HTTP/HTTPS (not file://). Run a local server (for example: npx http-server .) and open via http://localhost</td></tr>`;
+        return;
+      }
+
+      try {
+        // dynamic import so we can catch failures and show a friendly message
+        const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+        const { getFirestore, collection, getDocs, query, where } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+        const { getAuth, signOut, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyDRqIY5_KSXU6FUF23pBr6AJfR9oYu3A_w",
+          authDomain: "stu-teach-booking-appointment.firebaseapp.com",
+          projectId: "stu-teach-booking-appointment",
+          storageBucket: "stu-teach-booking-appointment.appspot.com",
+          messagingSenderId: "911059619353",
+          appId: "1:911059619353:web:3ec6ee920276da87b6a488",
+          measurementId: "G-L0L8ET89ZD"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // Show logged-in user email (or Guest)
+        onAuthStateChanged(auth, (user) => {
+          if (user) {
+            userEmailEl.textContent = user.email || "User";
+          } else {
+            userEmailEl.textContent = "Guest";
+          }
+        });
+
+        logoutBtn.addEventListener("click", async () => {
+          try {
+            await signOut(auth);
+            location.href = "login.html";
+          } catch (err) {
+            console.error("Sign out error:", err);
+            alert("Failed to sign out.");
+          }
+        });
+
+        // ✅ Fetch only Approved appointments
+        async function loadApprovedAppointments() {
+          table.innerHTML = `<tr><td colspan="6" class="no-data">Loading...</td></tr>`;
+
+          try {
+            const q = query(collection(db, "appointments"), where("status", "==", "Approved"));
+            const querySnapshot = await getDocs();
+
+
+            if (querySnapshot.empty) {
+              table.innerHTML = `<tr><td colspan="6" class="no-data">No Approved Appointments Found</td></tr>`;
+              return;
+            }
+
+            table.innerHTML = "";
+
+            querySnapshot.forEach((docSnap) => {
+              const app = docSnap.data();
+              const row = document.createElement("tr");
+              row.innerHTML = `
+                <td>${app.studentName || "N/A"}</td>
+                <td>${app.teacherName || "N/A"}</td>
+                <td>${app.teacherEmail || "N/A"}</td>
+                <td>${app.date || "-"}</td>
+                <td>${app.time || "-"}</td>
+                <td class="status approved">${app.status}</td>
+              `;
+              table.appendChild(row);
+            });
+
+          } catch (err) {
+            console.error("Error fetching data:", err);
+            table.innerHTML = `<tr><td colspan="6" class="no-data">Error loading data.</td></tr>`;
+          }
+        }
+
+        loadApprovedAppointments();
+      } catch (err) {
+        console.error("Failed to load Firebase modules or initialize app:", err);
+        table.innerHTML = `<tr><td colspan="6" class="no-data">Failed to load Firebase scripts — check console for details.</td></tr>`;
+      }
+    })();
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard | Bus Tracking</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div class="container">
+    <h2>🧑‍💼 Admin Dashboard</h2>
+    <p>Create new driver accounts below:</p>
+
+    <input type="email" id="driverEmail" placeholder="Driver Email" required />
+    <input type="password" id="driverPassword" placeholder="Driver Password" required />
+    <button id="createDriverBtn">Create Driver Account</button>
+
+    <hr />
+
+    <h3>Registered Drivers</h3>
+    <table border="1" id="driversTable" style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr>
+          <th style="border-radius: 10px; padding: 10px; font-family: 'Courier New', Courier, monospace;">Email</th>
+          <th>Created At</th>
+        </tr>
+      </thead>
+      <tbody id="driverList"></tbody>
+    </table>
+
+    <hr />
+    <button id="logoutBtn" style="background:red;">Logout</button>
+  </div>
+
+  <!-- ✅ Firebase + Admin Script -->
+  <script type="module">
+    // --- Firebase Imports ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+    import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+    import { getFirestore, setDoc, doc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+    // --- 🔥 Your Firebase Config ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyDRqIY5_KSXU6FUF23pBr6AJfR9oYu3A_w",
+      authDomain: "stu-teach-booking-appointment.firebaseapp.com",
+      projectId: "stu-teach-booking-appointment",
+      storageBucket: "stu-teach-booking-appointment.appspot.com",
+      messagingSenderId: "911059619353",
+      appId: "1:911059619353:web:3ec6ee920276da87b6a488",
+      measurementId: "G-L0L8ET89ZD"
+    };
+
+    // --- Initialize Firebase ---
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // ✅ Create driver
+    document.getElementById("createDriverBtn")?.addEventListener("click", async () => {
+      const email = document.getElementById("driverEmail").value.trim();
+      const password = document.getElementById("driverPassword").value.trim();
+
+      if (!email || !password) {
+        alert("Please fill all fields!");
+        return;
+      }
+
+      try {
+        await setDoc(doc(db, "p2_users_drivers", email), {
+          email,
+          password,
+          role: "driver",
+          createdAt: new Date().toISOString(),
+        });
+
+        alert(`✅ Driver account for ${email} created successfully!`);
+        document.getElementById("driverEmail").value = "";
+        document.getElementById("driverPassword").value = "";
+
+        loadDrivers();
+      } catch (err) {
+        console.error(err);
+        alert("❌ Error creating driver: " + err.message);
+      }
+    });
+
+    // ✅ Load all drivers
+    async function loadDrivers() {
+      const driverList = document.getElementById("driverList");
+      driverList.innerHTML = "";
+
+      try {
+        const querySnapshot = await getDocs(collection(db, "p2_users_drivers"));
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td style="border-radius : 10px; padding : 10px">${data.email}</td>
+            <td>${new Date(data.createdAt).toLocaleString()}</td>
+          `;
+          driverList.appendChild(row);
+        });
+      } catch (err) {
+        console.error("Error loading drivers:", err);
+      }
+    }
+
+    loadDrivers();
+
+    // ✅ Logout
+    document.getElementById("logoutBtn")?.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        alert("Logged out successfully!");
+        window.location.href = "index.html";
+      } catch (err) {
+        alert("Logout failed: " + err.message);
+      }
+    });
+  </script>
+</body>
+
+</html>

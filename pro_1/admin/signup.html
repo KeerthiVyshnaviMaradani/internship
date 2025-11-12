@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Signup</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #3f51b5, #5c6bc0);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .signup-container {
+      background: #fff;
+      padding: 2em;
+      border-radius: 15px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+      width: 320px;
+      text-align: center;
+    }
+
+    .signup-container h2 {
+      margin-bottom: 1em;
+      color: #3f51b5;
+    }
+
+    .signup-container input {
+      width: 90%;
+      margin: 0.5em 0;
+      padding: 0.7em;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1em;
+    }
+
+    .signup-container button {
+      background: #3f51b5;
+      color: white;
+      border: none;
+      padding: 0.8em 1em;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 1em;
+      transition: 0.3s;
+    }
+
+    .signup-container button:hover {
+      background: #2c387e;
+    }
+
+    #message {
+      margin-top: 1em;
+      font-weight: bold;
+    }
+
+    .pro{
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      display: flex;
+      align-content: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 30px;
+      color: #fff;
+      margin: auto;
+      background: linear-gradient(180deg, rgb(0, 81, 255), rgb(45, 36, 170));
+    }
+  </style>
+</head>
+<body>
+  <div class="signup-container" id="signup-container"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDRqIY5_KSXU6FUF23pBr6AJfR9oYu3A_w",
+      authDomain: "stu-teach-booking-appointment.firebaseapp.com",
+      projectId: "stu-teach-booking-appointment",
+      storageBucket: "stu-teach-booking-appointment.appspot.com",
+      messagingSenderId: "911059619353",
+      appId: "1:911059619353:web:3ec6ee920276da87b6a488",
+      measurementId: "G-L0L8ET89ZD"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const container = document.getElementById("signup-container");
+    const tok = localStorage.getItem("adminEmail");
+
+    function makeInitialsFromEmail(email) {
+      if (!email) return "--";
+      const local = email.split("@")[0] || email;
+      // remove non-letters, take up to 2 chars
+      const letters = local.replace(/[^a-zA-Z]/g, "").toUpperCase();
+      if (letters.length >= 2) return letters.slice(0, 2);
+      // fallback to first two chars
+      return local.slice(0, 2).toUpperCase();
+    }
+
+    if (tok && typeof tok === "string" && tok.includes("@")) {
+      const initials = makeInitialsFromEmail(tok);
+      container.innerHTML = `
+        <div class="pro"><span>${initials}</span></div>
+        <h2>You are In</h2>
+        <span>Admin : ${tok}</span>
+        <button id="go-dashboard">Go to Dashboard</button>
+        <button id="logout-btn" style="margin-top:0.5em; background:#e53935;">Logout</button>
+      `;
+
+      const goBtn = document.getElementById("go-dashboard");
+      const logoutBtn = document.getElementById("logout-btn");
+
+      goBtn.addEventListener("click", () => {
+        // adjust the target path to your actual admin dashboard
+        window.location.href = "/admin/dashboard.html";
+      });
+
+      logoutBtn.addEventListener("click", () => {
+        localStorage.removeItem("adminEmail");
+        window.location.reload();
+      });
+
+    } else {
+      container.innerHTML = `
+        <h2>Admin Signup</h2>
+        <form id="signup-form">
+          <input type="text" id="name" placeholder="Full Name" required />
+          <input type="text" id="username" placeholder="Username" required />
+          <input type="email" id="email" placeholder="Email" required />
+          <input type="password" id="password" placeholder="Password" required />
+          <button type="submit">Sign Up</button>
+        </form>
+        <p id="message"></p>
+        <a href="login.html" >Login</a>
+      `;
+
+      const form = document.getElementById("signup-form");
+      const message = document.getElementById("message");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const name = document.getElementById("name").value.trim();
+        const username = document.getElementById("username").value.trim();
+        const email = document.getElementById("email").value.trim().toLowerCase();
+        const password = document.getElementById("password").value.trim();
+
+        if (!email || !password) {
+          message.style.color = "red";
+          message.textContent = "Please fill in required fields.";
+          return;
+        }
+
+        try {
+          const docRef = doc(db, "admin_data", email);
+          const docSnap = await getDoc(docRef);
+
+          if (docSnap.exists()) {
+            message.style.color = "red";
+            message.textContent = "❌ This email is already registered.";
+          } else {
+            await setDoc(docRef, {
+              name,
+              username,
+              email,
+              password,
+              createdAt: new Date()
+            });
+            // store admin email locally so the user is treated as signed in
+            localStorage.setItem("adminEmail", email);
+
+            message.style.color = "green";
+            message.textContent = "✅ New Admin account created successfully! Redirecting...";
+            form.reset();
+
+            // short delay then reload to show signed-in UI (or redirect directly)
+            setTimeout(() => {
+              // change to a dashboard path if you prefer immediate redirect:
+              // window.location.href = "/admin/dashboard.html";
+              window.location.reload();
+            }, 900);
+          }
+        } catch (error) {
+          message.style.color = "red";
+          message.textContent = "Error: " + (error.message || error);
+          console.error(error);
+        }
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Bus Tracking System</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap");
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Poppins", sans-serif;
+      background: linear-gradient(135deg, #141e30, #243b55);
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    .container {
+      text-align: center;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+      padding: 40px 30px;
+      border-radius: 20px;
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+      width: 90%;
+      max-width: 500px;
+      animation: fadeIn 1s ease-in-out;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+      color: #00c6ff;
+    }
+
+    p {
+      font-size: 1rem;
+      margin-bottom: 25px;
+      color: #ddd;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    button {
+      background: linear-gradient(90deg, #00c6ff, #0072ff);
+      border: none;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      color: white;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.3s;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 15px #00c6ff;
+    }
+
+    footer {
+      margin-top: 25px;
+      font-size: 13px;
+      color: #ccc;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Floating background animation */
+    .circle {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+      animation: float 10s infinite ease-in-out;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) translateX(0); }
+      50% { transform: translateY(-30px) translateX(20px); }
+    }
+
+    .circle:nth-child(1) {
+      width: 150px; height: 150px; top: 10%; left: 10%;
+      animation-delay: 0s;
+    }
+    .circle:nth-child(2) {
+      width: 200px; height: 200px; bottom: 15%; right: 10%;
+      animation-delay: 3s;
+    }
+    .circle:nth-child(3) {
+      width: 100px; height: 100px; bottom: 5%; left: 25%;
+      animation-delay: 6s;
+    }
+  </style>
+</head>
+<body>
+  <!-- Floating circles -->
+  <div class="circle"></div>
+  <div class="circle"></div>
+  <div class="circle"></div>
+
+  <!-- Main content -->
+  <div class="container">
+    <h1>🚍 Smart Bus Tracking System</h1>
+    <p>Real-time bus tracking for Admins, Drivers, and Users</p>
+
+    <div class="btn-group">
+      <button onclick="goTo('admin.html')">👩‍💼 Admin Login</button>
+      <button onclick="goTo('driver.html')">🧑‍✈️ Driver Login</button>
+      <button onclick="goTo('user.html')">🧭 User Dashboard</button>
+    </div>
+
+    <footer>© 2025 SmartBus | All rights reserved</footer>
+  </div>
+
+  <script>
+    function goTo(page) {
+      window.location.href = page;
+    }
+  </script>
+</body>
+</html>

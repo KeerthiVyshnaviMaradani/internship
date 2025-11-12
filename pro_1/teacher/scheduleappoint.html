@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Teacher → Student Appointment</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Poppins", sans-serif;
+      background: linear-gradient(120deg, #a1c4fd, #c2e9fb);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      background: #fff;
+      border-radius: 20px;
+      padding: 35px 40px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      width: 400px;
+      animation: fadeIn 0.6s ease-in-out;
+      margin-bottom: 40px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h2, h3 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    .form-group { margin-bottom: 20px; }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: #555;
+      font-weight: 500;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      outline: none;
+      font-size: 15px;
+      transition: 0.3s;
+    }
+
+    input:focus, select:focus {
+      border-color: #5a67d8;
+      box-shadow: 0 0 6px rgba(90, 103, 216, 0.3);
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      background-color: #5a67d8;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover { background-color: #434bb7; }
+
+    .success-message {
+      display: none;
+      text-align: center;
+      color: green;
+      font-weight: 600;
+      margin-top: 15px;
+    }
+
+    /* Appointments Table */
+    table {
+      width: 90%;
+      max-width: 800px;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    }
+
+    th, td {
+      padding: 12px 15px;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #556ee6;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    .status {
+      font-weight: bold;
+      color: #5a67d8;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h2>📅 Schedule Appointment With Student</h2>
+    <form id="appointmentForm">
+      <div class="form-group">
+        <label for="studentSelect">Select Student</label>
+        <select id="studentSelect" required>
+          <option value="">-- Loading Students... --</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="subject">Subject / Topic</label>
+        <input type="text" id="subject" placeholder="Enter topic or subject" required />
+      </div>
+
+      <div class="form-group">
+        <label for="date">Appointment Date</label>
+        <input type="date" id="date" required />
+      </div>
+
+      <div class="form-group">
+        <label for="time">Time Slot</label>
+        <input type="time" id="time" required />
+      </div>
+
+      <button type="submit">Book Appointment</button>
+      <div class="success-message" id="successMsg">✅ Appointment Scheduled Successfully!</div>
+    </form>
+  </div>
+
+  <h3>📋 Your Booked Appointments</h3>
+  <table id="appointmentTable">
+    <thead>
+      <tr>
+        <th>Student Email</th>
+        <th>Subject</th>
+        <th>Date</th>
+        <th>Time</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="appointmentList">
+      <tr><td colspan="5">Loading...</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      addDoc,
+      serverTimestamp,
+      query,
+      where
+    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+    // 🔥 Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDRqIY5_KSXU6FUF23pBr6AJfR9oYu3A_w",
+      authDomain: "stu-teach-booking-appointment.firebaseapp.com",
+      projectId: "stu-teach-booking-appointment",
+      storageBucket: "stu-teach-booking-appointment.appspot.com",
+      messagingSenderId: "911059619353",
+      appId: "1:911059619353:web:3ec6ee920276da87b6a488",
+      measurementId: "G-L0L8ET89ZD"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const studentSelect = document.getElementById("studentSelect");
+    const form = document.getElementById("appointmentForm");
+    const successMsg = document.getElementById("successMsg");
+    const appointmentList = document.getElementById("appointmentList");
+
+    // ✅ Logged-in teacher
+    const teacherEmail = localStorage.getItem("t_email");
+    const teacherName = localStorage.getItem("t_name");
+
+    if (!teacherEmail) {
+      alert("Please login as teacher first!");
+      window.location.href = "teacher_login.html";
+    }
+
+    // 🧠 Load all students
+    async function loadStudents() {
+      studentSelect.innerHTML = `<option value="">-- Loading Students... --</option>`;
+      try {
+        const snapshot = await getDocs(collection(db, "students"));
+        studentSelect.innerHTML = `<option value="">-- Select Student --</option>`;
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const opt = document.createElement("option");
+          opt.value = data.email;
+          opt.textContent = `${data.name} (${data.email})`;
+          studentSelect.appendChild(opt);
+        });
+        if (studentSelect.options.length === 1)
+          studentSelect.innerHTML = `<option value="">No students found</option>`;
+      } catch (err) {
+        console.error("Error loading students:", err);
+        studentSelect.innerHTML = `<option value="">Error loading students</option>`;
+      }
+    }
+
+    loadStudents();
+
+    // ✅ Submit appointment → Firestore "teacher_appointment"
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const studentEmail = studentSelect.value;
+      const subject = document.getElementById("subject").value.trim();
+      const date = document.getElementById("date").value;
+      const time = document.getElementById("time").value;
+
+      if (!studentEmail || !subject || !date || !time) {
+        alert("⚠️ Please fill all fields!");
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, "teacher_appointment"), {
+          teacherName: teacherName || "",
+          teacherEmail,
+          studentEmail,
+          subject,
+          date,
+          time,
+          status: "Pending",
+          createdAt: serverTimestamp()
+        });
+
+        form.reset();
+        successMsg.style.display = "block";
+        setTimeout(() => (successMsg.style.display = "none"), 2500);
+
+        loadAppointments(); // refresh list after adding
+      } catch (err) {
+        console.error("Error adding appointment:", err);
+        alert("❌ Failed to schedule appointment!");
+      }
+    });
+
+    // 📄 Load teacher's booked appointments
+    async function loadAppointments() {
+      appointmentList.innerHTML = `<tr><td colspan="5">Loading...</td></tr>`;
+      try {
+        const q = query(collection(db, "teacher_appointment"), where("teacherEmail", "==", teacherEmail));
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) {
+          appointmentList.innerHTML = `<tr><td colspan="5">No appointments found.</td></tr>`;
+          return;
+        }
+
+        appointmentList.innerHTML = "";
+        snapshot.forEach(doc => {
+          const d = doc.data();
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${d.studentEmail}</td>
+            <td>${d.subject}</td>
+            <td>${d.date}</td>
+            <td>${d.time}</td>
+            <td class="status">${d.status}</td>
+          `;
+          appointmentList.appendChild(tr);
+        });
+      } catch (err) {
+        console.error("Error loading appointments:", err);
+        appointmentList.innerHTML = `<tr><td colspan="5">Error loading appointments</td></tr>`;
+      }
+    }
+
+    // Load on page start
+    loadAppointments();
+  </script>
+</body>
+</html>

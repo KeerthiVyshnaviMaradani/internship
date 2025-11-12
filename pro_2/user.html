@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User | Bus Tracking</title>
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      margin: 0;
+      background: linear-gradient(135deg, #283048, #859398);
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 25px;
+      width: 100%;
+      max-width: 900px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      overflow-x: auto;
+    }
+
+    h2 {
+      text-align: center;
+      font-size: 1.8rem;
+      margin-bottom: 15px;
+      color: #fff;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 6px;
+      font-size: 15px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      border: none;
+      border-radius: 6px;
+      background: linear-gradient(90deg, #00c6ff, #0072ff);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #0099ff;
+      transform: scale(1.02);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    th, td {
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 10px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    th {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    td {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .no-data {
+      text-align: center;
+      font-style: italic;
+      color: #ccc;
+    }
+
+    /* 🌐 Responsive adjustments */
+    @media (max-width: 768px) {
+      body {
+        padding: 15px;
+      }
+
+      .container {
+        padding: 20px;
+      }
+
+      h2 {
+        font-size: 1.4rem;
+      }
+
+      th, td {
+        font-size: 13px;
+        padding: 8px;
+      }
+
+      button {
+        font-size: 15px;
+        padding: 10px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 15px;
+      }
+
+      input, button {
+        font-size: 14px;
+        padding: 9px;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+
+      th, td {
+        padding: 7px;
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🧭 User Portal – Track Your Bus</h2>
+
+    <input type="text" id="searchInput" placeholder="Search by Bus Number or Route (e.g., Hitech City)" />
+    <button id="searchBtn">Search</button>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Bus Number</th>
+          <th>Route</th>
+          <th>Current Location</th>
+          <th>Updated</th>
+        </tr>
+      </thead>
+      <tbody id="busResults">
+        <tr><td colspan="4" class="no-data">No buses found yet</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDRqIY5_KSXU6FUF23pBr6AJfR9oYu3A_w",
+      authDomain: "stu-teach-booking-appointment.firebaseapp.com",
+      projectId: "stu-teach-booking-appointment",
+      storageBucket: "stu-teach-booking-appointment.appspot.com",
+      messagingSenderId: "911059619353",
+      appId: "1:911059619353:web:3ec6ee920276da87b6a488",
+      measurementId: "G-L0L8ET89ZD"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const searchInput = document.getElementById("searchInput");
+    const searchBtn = document.getElementById("searchBtn");
+    const busResults = document.getElementById("busResults");
+
+    async function searchBuses() {
+      const searchTerm = searchInput.value.trim().toLowerCase();
+      busResults.innerHTML = `<tr><td colspan="4" class="no-data">Searching...</td></tr>`;
+
+      const querySnapshot = await getDocs(collection(db, "p2_buses"));
+      let found = false;
+      let rows = "";
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        const routeLower = (data.route || "").toLowerCase();
+        const busLower = (data.busNumber || "").toLowerCase();
+
+        if (routeLower.includes(searchTerm) || busLower.includes(searchTerm)) {
+          found = true;
+          rows += `
+            <tr>
+              <td>${data.busNumber}</td>
+              <td>${data.route}</td>
+              <td>${data.location}</td>
+              <td>${new Date(data.updatedAt).toLocaleString()}</td>
+            </tr>
+          `;
+        }
+      });
+
+      if (found) {
+        busResults.innerHTML = rows;
+      } else {
+        busResults.innerHTML = `<tr><td colspan="4" class="no-data">No matching buses found</td></tr>`;
+      }
+    }
+
+    searchBtn.addEventListener("click", searchBuses);
+    searchInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") searchBuses();
+    });
+  </script>
+</body>
+</html>

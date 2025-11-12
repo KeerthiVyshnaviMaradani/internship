@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Student Login</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#3f51b5,#5c6bc0);height:100vh;display:flex;align-items:center;justify-content:center;margin:0}
+    .card{background:#fff;padding:26px;border-radius:12px;width:360px;box-shadow:0 8px 30px rgba(0,0,0,.15);text-align:center}
+    .card h2{color:#3f51b5;margin:0 0 12px}
+    input{width:100%;padding:10px;margin:8px 0;border:1px solid #ccc;border-radius:8px;box-sizing:border-box}
+    button{width:100%;padding:10px;margin-top:10px;border:none;border-radius:8px;background:#3f51b5;color:#fff;cursor:pointer}
+    .msg{margin-top:12px;font-weight:600}
+    a.small{display:block;margin-top:10px;color:#3f51b5;text-decoration:none}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Student Login</h2>
+    <form id="loginForm">
+      <input id="email" type="email" placeholder="Email" required />
+      <input id="password" type="password" placeholder="Password" required />
+      <button type="submit">Login</button>
+    </form>
+    <div id="message" class="msg"></div>
+    <a class="small" href="s_reg.html">Don't have an account? Sign up</a>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDRqIY5_KSXU6FUF23pBr6AJfR9oYu3A_w",
+      authDomain: "stu-teach-booking-appointment.firebaseapp.com",
+      projectId: "stu-teach-booking-appointment",
+      storageBucket: "stu-teach-booking-appointment.appspot.com",
+      messagingSenderId: "911059619353",
+      appId: "1:911059619353:web:3ec6ee920276da87b6a488",
+      measurementId: "G-L0L8ET89ZD"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const form = document.getElementById("loginForm");
+    const msg = document.getElementById("message");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      msg.style.color = "black";
+      msg.textContent = "Logging in...";
+
+      const email = document.getElementById("email").value.trim().toLowerCase();
+      const password = document.getElementById("password").value;
+
+      try {
+        // Sign in with Firebase Auth
+        // const userCred = await signInWithEmailAndPassword(auth, email, password);
+        // const user = userCred.user;
+
+        // Fetch student profile in Firestore (doc ID = email)
+        const snap = await getDoc(doc(db, "students", email));
+        if (!snap.exists()) {
+          // logged in via Auth but profile missing — still accept or tell user
+          msg.style.color = "orange";
+          msg.textContent = "Logged in but profile not found. Contact admin.";
+          // optionally set localStorage with basic info:
+          localStorage.setItem("studentEmail", email);
+          setTimeout(() => window.location.href = "bookappoint.html", 1200);
+          return;
+        }
+
+        const profile = snap.data();
+        // Save session locally
+        localStorage.setItem("student", profile.email);
+        msg.style.color = "green";
+        msg.textContent = "Login successful! Redirecting...";
+        setTimeout(() => window.location.href = "bookappoint.html", 900);
+      } catch (err) {
+        console.error(err);
+        msg.style.color = "red";
+        if (err.code === "auth/user-not-found") msg.textContent = "No account with this email.";
+        else if (err.code === "auth/wrong-password") msg.textContent = "Incorrect password.";
+        else msg.textContent = "Login failed: " + (err.message || err);
+      }
+    });
+  </script>
+</body>
+</html>

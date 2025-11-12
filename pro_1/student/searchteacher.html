@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Search Teacher & Book Appointment</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(120deg, #89f7fe, #66a6ff);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px;
+      min-height: 100vh;
+    }
+
+    .container {
+      background: #fff;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      width: 90%;
+      max-width: 900px;
+      margin-bottom: 40px;
+    }
+
+    h2, h3 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: 2px solid #ddd;
+      font-size: 15px;
+      margin-bottom: 20px;
+      outline: none;
+      transition: 0.3s;
+    }
+
+    input:focus {
+      border-color: #556ee6;
+      box-shadow: 0 0 6px rgba(85,110,230,0.3);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    th, td {
+      padding: 12px 15px;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #556ee6;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+    tr:hover {
+      background-color: #eef2fb;
+    }
+
+    .book-btn {
+      padding: 6px 12px;
+      background: #556ee6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .book-btn:hover {
+      background: #3347c7;
+    }
+
+    .no-results {
+      text-align: center;
+      color: #555;
+      font-size: 16px;
+      margin-top: 15px;
+    }
+
+    #appointmentMsg {
+      text-align: center;
+      color: green;
+      font-weight: 600;
+      margin-top: 15px;
+      display: none;
+    }
+
+    .status {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>🔍 Search Teacher & Book Appointment</h2>
+    <input type="text" id="searchInput" placeholder="Search by name, department or subject..." />
+
+    <table id="teacherTable">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Subject</th>
+          <th>Email</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <p id="noResults" class="no-results">No teachers found.</p>
+    <p id="appointmentMsg">Appointment booked successfully!</p>
+  </div>
+
+  <div class="container">
+    <h3>📅 All Appointments Booked by Teachers</h3>
+    <table id="appointmentTable">
+      <thead>
+        <tr>
+          <th>Teacher Name</th>
+          <th>Teacher Email</th>
+          <th>Student Email</th>
+          <th>Subject</th>
+          <th>Date</th>
+          <th>Time</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="appointmentList">
+        <tr><td colspan="7">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { 
+      getFirestore, 
+      collection, 
+      getDocs 
+    } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+    // ✅ Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDRqIY5_KSXU6FUF23pBr6AJfR9oYu3A_w",
+      authDomain: "stu-teach-booking-appointment.firebaseapp.com",
+      projectId: "stu-teach-booking-appointment",
+      storageBucket: "stu-teach-booking-appointment.appspot.com",
+      messagingSenderId: "911059619353",
+      appId: "1:911059619353:web:3ec6ee920276da87b6a488",
+      measurementId: "G-L0L8ET89ZD"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const searchInput = document.getElementById("searchInput");
+    const tableBody = document.querySelector("#teacherTable tbody");
+    const noResults = document.getElementById("noResults");
+    const appointmentList = document.getElementById("appointmentList");
+
+    let teachers = [];
+
+    // 🔹 Load Teachers
+    async function loadTeachers() {
+      const querySnapshot = await getDocs(collection(db, "teachers"));
+      teachers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      renderTeachers(teachers);
+    }
+
+    function renderTeachers(filteredTeachers) {
+      tableBody.innerHTML = '';
+      if (filteredTeachers.length === 0) {
+        noResults.style.display = 'block';
+        return;
+      }
+      noResults.style.display = 'none';
+
+      filteredTeachers.forEach(t => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${t.name}</td>
+          <td>${t.subject}</td>
+          <td>${t.email}</td>
+          <td>
+            <button class="book-btn"
+              onclick="window.location.href='bookappoint.html?teacherId=${encodeURIComponent(t.id)}'">
+              Book
+            </button>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    // 🔹 Filter Teachers
+    searchInput.addEventListener("input", () => {
+      const query = searchInput.value.toLowerCase();
+      const filtered = teachers.filter(t =>
+        (t.name && t.name.toLowerCase().includes(query)) ||
+        (t.department && t.department.toLowerCase().includes(query)) ||
+        (t.subject && t.subject.toLowerCase().includes(query))
+      );
+      renderTeachers(filtered);
+    });
+
+    // 🔹 Load All Appointments
+    async function loadAllAppointments() {
+      appointmentList.innerHTML = `<tr><td colspan="7">Loading...</td></tr>`;
+      try {
+        const snapshot = await getDocs(collection(db, "teacher_appointment"));
+        if (snapshot.empty) {
+          appointmentList.innerHTML = `<tr><td colspan="7">No appointments found.</td></tr>`;
+          return;
+        }
+
+        appointmentList.innerHTML = '';
+        snapshot.forEach(doc => {
+          const a = doc.data();
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${a.teacherName || 'Unknown'}</td>
+            <td>${a.teacherEmail || '-'}</td>
+            <td>${a.studentEmail || '-'}</td>
+            <td>${a.subject || '-'}</td>
+            <td>${a.date || '-'}</td>
+            <td>${a.time || '-'}</td>
+            <td class="status">${a.status || 'Pending'}</td>
+          `;
+          appointmentList.appendChild(row);
+        });
+      } catch (err) {
+        console.error("Error loading appointments:", err);
+        appointmentList.innerHTML = `<tr><td colspan="7">Error loading data</td></tr>`;
+      }
+    }
+
+    // 🔹 Load Everything
+    loadTeachers();
+    loadAllAppointments();
+  </script>
+</body>
+</html>

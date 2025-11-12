@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Driver Dashboard | Bus Tracking</title>
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      margin: 0;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 25px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      box-sizing: border-box;
+    }
+
+    h2,
+    h3 {
+      text-align: center;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border: none;
+      border-radius: 5px;
+      font-size: 15px;
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 5px;
+      background: #00c6ff;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #0072ff;
+    }
+
+    #logoutBtn {
+      background: #e74c3c;
+    }
+
+    #logoutBtn:hover {
+      background: #c0392b;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      font-size: 14px;
+      overflow-x: auto;
+    }
+
+    th,
+    td {
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    td {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .cnt_009 {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 16px;
+    }
+
+    .cnt_008 {
+      font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+      font-size: 14px;
+    }
+
+    /* 📱 Mobile adjustments */
+    @media (max-width: 600px) {
+      body {
+        padding: 10px;
+        align-items: stretch;
+      }
+
+      .container {
+        padding: 20px;
+        border-radius: 10px;
+      }
+
+      h2 {
+        font-size: 20px;
+      }
+
+      input,
+      button {
+        font-size: 14px;
+        padding: 10px;
+      }
+
+      table {
+        font-size: 13px;
+      }
+
+      th,
+      td {
+        padding: 8px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container" id="main"></div>
+
+  <!-- ✅ Firebase Integration -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+    import { getFirestore, setDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDRqIY5_KSXU6FUF23pBr6AJfR9oYu3A_w",
+      authDomain: "stu-teach-booking-appointment.firebaseapp.com",
+      projectId: "stu-teach-booking-appointment",
+      storageBucket: "stu-teach-booking-appointment.appspot.com",
+      messagingSenderId: "911059619353",
+      appId: "1:911059619353:web:3ec6ee920276da87b6a488",
+      measurementId: "G-L0L8ET89ZD"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const mainDiv = document.getElementById("main");
+    const storedEmail = localStorage.getItem("driver_email");
+
+    if (!storedEmail || !storedEmail.includes("@gmail.com")) {
+      mainDiv.innerHTML = `
+        <div id="authSection">
+          <h3>🚍 Driver Login</h3>
+          <input type="email" id="loginEmail" placeholder="Enter your email" required />
+          <button id="loginBtn">Login</button>
+        </div>
+      `;
+    } else {
+      mainDiv.innerHTML = `
+        <h2>🚌 Driver Portal</h2>
+        <div id="dashboardSection">
+          <h3>Welcome Driver</h3>
+          <p>Update your bus information and location below.</p>
+
+          <input type="text" id="busNumber" placeholder="Bus Number" required />
+          <input type="text" id="route" placeholder="Route (e.g., Ameerpet → Hitech City)" required />
+          <input type="text" id="location" placeholder="Current Location" required />
+          <button id="updateBusBtn">Update Bus Info</button>
+
+          <table>
+            <thead>
+              <tr class="cnt_009">
+                <th>Bus Number</th>
+                <th>Route</th>
+                <th>Location</th>
+                <th>Updated</th>
+              </tr>
+            </thead>
+            <tbody id="busInfoTable">
+              <tr><td colspan="4">Loading...</td></tr>
+            </tbody>
+          </table>
+
+          <button id="logoutBtn">Logout</button>
+        </div>
+      `;
+      loadBusInfo();
+    }
+
+    document.addEventListener("click", async (e) => {
+      if (e.target.id === "loginBtn") {
+        const email = document.getElementById("loginEmail").value.trim();
+        if (!email) return alert("Please enter email");
+        localStorage.setItem("driver_email", email);
+        alert("✅ Login successful!");
+        window.location.reload();
+      }
+
+      if (e.target.id === "updateBusBtn") {
+        const busNumber = document.getElementById("busNumber").value.trim();
+        const route = document.getElementById("route").value.trim();
+        const location = document.getElementById("location").value.trim();
+        const email = localStorage.getItem("driver_email");
+
+        if (!busNumber || !route || !location)
+          return alert("Please fill all fields!");
+
+        try {
+          await setDoc(doc(db, "p2_buses", email), {
+            driverEmail: email,
+            busNumber,
+            route,
+            location,
+            updatedAt: new Date().toISOString()
+          }, { merge: true });
+
+          alert("✅ Bus info updated!");
+          await loadBusInfo();
+        } catch (err) {
+          alert("❌ " + err.message);
+        }
+      }
+
+      if (e.target.id === "logoutBtn") {
+        localStorage.removeItem("driver_email");
+        alert("Logged out successfully!");
+        window.location.reload();
+      }
+    });
+
+    async function loadBusInfo() {
+      const email = localStorage.getItem("driver_email");
+      const busInfoTable = document.getElementById("busInfoTable");
+      if (!email) return;
+
+      const docRef = doc(db, "p2_buses", email);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        busInfoTable.innerHTML = `
+          <tr class="cnt_008">
+            <td>${data.busNumber}</td>
+            <td>${data.route}</td>
+            <td>${data.location}</td>
+            <td>${new Date(data.updatedAt).toLocaleString()}</td>
+          </tr>
+        `;
+      } else {
+        busInfoTable.innerHTML = `<tr><td colspan="4">No data found</td></tr>`;
+      }
+    }
+  </script>
+</body>
+</html>

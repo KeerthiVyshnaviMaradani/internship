@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #3f51b5, #5c6bc0);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .login-container {
+      background: #fff;
+      padding: 2em;
+      border-radius: 15px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+      width: 320px;
+      text-align: center;
+    }
+
+    .login-container h2 {
+      margin-bottom: 1em;
+      color: #3f51b5;
+    }
+
+    .login-container input {
+      width: 90%;
+      margin: 0.5em 0;
+      padding: 0.7em;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1em;
+    }
+
+    .login-container button {
+      background: #3f51b5;
+      color: white;
+      border: none;
+      padding: 0.8em 1em;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 1em;
+      transition: 0.3s;
+    }
+
+    .login-container button:hover {
+      background: #2c387e;
+    }
+
+    #message {
+      margin-top: 1em;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="login-container" id="login-container">
+    
+  </div>
+
+  <script type="module">
+
+    
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+    // ✅ Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDRqIY5_KSXU6FUF23pBr6AJfR9oYu3A_w",
+      authDomain: "stu-teach-booking-appointment.firebaseapp.com",
+      projectId: "stu-teach-booking-appointment",
+      storageBucket: "stu-teach-booking-appointment.appspot.com",
+      messagingSenderId: "911059619353",
+      appId: "1:911059619353:web:3ec6ee920276da87b6a488",
+      measurementId: "G-L0L8ET89ZD"
+    };
+
+    // ✅ Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const get_main_doc = document.getElementById("login-container");
+    const is_login = localStorage.getItem("adminEmail");
+
+    // If adminEmail exists and looks like a gmail address, consider the user logged in and redirect
+    if (is_login && is_login.includes("@gmail.com")) {
+      // already logged in -> redirect to dashboard
+      window.location.href = "addteacher.html";
+    } else {
+      // render login form
+      get_main_doc.innerHTML = `
+        <h2>Admin Login</h2>
+        <form id="login-form">
+          <input type="email" id="email" placeholder="Email" required />
+          <input type="password" id="password" placeholder="Password" required />
+          <button type="submit">Login</button>
+        </form>
+        <p id="message"></p>
+        <a href="signup.html">signup</a>
+      `;
+    }
+
+    // now grab form and message after they exist in the DOM
+    const form = document.getElementById("login-form");
+    const message = document.getElementById("message");
+
+    // Only attach the submit handler if the form exists (avoids errors when redirected)
+    if (form) {
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (message) {
+          message.style.color = "black";
+          message.textContent = "Checking admin credentials...";
+        }
+
+        const email = document.getElementById("email").value.trim().toLowerCase();
+        const password = document.getElementById("password").value.trim();
+
+        try {
+          // ✅ Get Firestore document
+          const get_users_doc_ref = doc(db, "admin_data", email);
+          const get_users_data = await getDoc(get_users_doc_ref);
+
+          if (get_users_data.exists()) {
+            const admin = get_users_data.data();
+
+            if (admin.password === password) {
+              if (message) {
+                message.style.color = "green";
+                message.textContent = "✅ Login successful!";
+              }
+              // store a fallback (email) if admin.email is not present
+              localStorage.setItem("adminEmail", admin.email || email);
+              setTimeout(() => {
+                window.location.href = "addteacher.html"; // Redirect page
+              }, 1500);
+            } else {
+              if (message) {
+                message.style.color = "red";
+                message.textContent = "❌ Incorrect password.";
+              }
+            }
+          } else {
+            if (message) {
+              message.style.color = "red";
+              message.textContent = "❌ Admin not found.";
+            }
+          }
+        } catch (error) {
+          console.error(error);
+          if (message) {
+            message.style.color = "red";
+            message.textContent = "Error: " + (error.message || error);
+          }
+        }
+      });
+    }
+  
+  
+  
+  </script>
+</body>
+</html>

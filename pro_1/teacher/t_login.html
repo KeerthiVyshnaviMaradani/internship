@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Poppins", sans-serif; }
+    body {
+      height: 100vh;
+      background: linear-gradient(120deg, #74ebd5, #acb6e5);
+      display: flex; justify-content: center; align-items: center;
+    }
+    .login-container {
+      background: #fff; width: 380px; padding: 40px 30px; border-radius: 20px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.2); text-align: center;
+    }
+    h2 { margin-bottom: 10px; color: #333; font-size: 28px; }
+    p { margin-bottom: 25px; color: #666; font-size: 14px; }
+    .input-group { margin-bottom: 25px; text-align: left; }
+    label { display: block; color: #555; font-weight: 500; margin-bottom: 6px; }
+    input {
+      width: 100%; padding: 10px 12px; border: 2px solid #ddd;
+      border-radius: 10px; outline: none; font-size: 15px;
+    }
+    input:focus { border-color: #556ee6; box-shadow: 0 0 6px rgba(85,110,230,0.3); }
+    .login-btn {
+      width: 100%; padding: 12px; border: none; border-radius: 10px;
+      background: #556ee6; color: white; font-size: 16px; font-weight: 600; cursor: pointer;
+    }
+    .login-btn:hover { background: #3f51c1; }
+    .error-message { color: #dc3545; font-size: 14px; margin-bottom: 10px; display: none; }
+    .success-message { color: #28a745; font-size: 14px; margin-bottom: 10px; display: none; }
+    
+    #btn_01{
+      width: 90%;
+      height: 50px;
+      margin-top: 20px;
+      border-radius: 20px;
+      border: 1px solid;
+      color: #fff;
+      background-color: #28a745;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container" id="login-container">
+    
+
+
+  </div>
+
+  <!-- ✅ Firebase Login Script -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+    // ✅ Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDRqIY5_KSXU6FUF23pBr6AJfR9oYu3A_w",
+      authDomain: "stu-teach-booking-appointment.firebaseapp.com",
+      projectId: "stu-teach-booking-appointment",
+      storageBucket: "stu-teach-booking-appointment.appspot.com",
+      messagingSenderId: "911059619353",
+      appId: "1:911059619353:web:3ec6ee920276da87b6a488",
+      measurementId: "G-L0L8ET89ZD"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let check_cnt = localStorage.getItem("t_email")
+    let cnt_ds = document.getElementById("login-container")
+
+    if(check_cnt == undefined || check_cnt == "" || !check_cnt.includes("@gmail.com")){
+      cnt_ds.innerHTML = `
+      <h2>Admin Login</h2>
+    <p>Login to access the Teacher dashboard</p>
+
+    <div id="errorMsg" class="error-message"></div>
+    <div id="successMsg" class="success-message"></div>
+
+    <form id="loginForm">
+      <div class="input-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="teacher@example.com" required />
+      </div>
+
+      <div class="input-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="••••••••" required />
+      </div>
+
+      <button type="submit" class="login-btn">Login</button>
+    </form>`
+
+      // Grab the newly injected elements
+      const errorMsg = document.getElementById("errorMsg");
+      const successMsg = document.getElementById("successMsg");
+      const loginForm = document.getElementById("loginForm");
+
+      // ✅ Event Listener for Form Submit (only if form exists)
+      if (loginForm) {
+        loginForm.addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const email = document.getElementById("email").value.trim().toLowerCase();
+          const password = document.getElementById("password").value.trim();
+
+          // Reset messages
+          errorMsg.style.display = "none";
+          successMsg.style.display = "none";
+
+          try {
+            // ✅ Fetch teacher/admin document
+            const adminRef = doc(db, "teachers", email);
+            const adminSnap = await getDoc(adminRef);
+
+            if (!adminSnap.exists()) {
+              errorMsg.textContent = "❌ Admin not found.";
+              errorMsg.style.display = "block";
+              return;
+            }
+
+            const admin = adminSnap.data();
+
+            // ✅ Validate password
+            if (admin.password === password) {
+              successMsg.textContent = "✅ Login successful! Redirecting...";
+              successMsg.style.display = "block";
+
+              localStorage.setItem("t_email", email);
+              setTimeout(() => {
+                window.location.href = "viewallappoint.html";
+              }, 1500);
+            } else {
+              errorMsg.textContent = "❌ Incorrect password.";
+              errorMsg.style.display = "block";
+            }
+
+          } catch (error) {
+            console.error("Error:", error);
+            errorMsg.textContent = "⚠️ " + error.message;
+            errorMsg.style.display = "block";
+          }
+        });
+      }
+
+    }else{
+      cnt_ds.innerHTML = `
+      <h1>To Home Page</h1>
+      <button id="btn_01">To Home Page</button>
+      `
+
+      // attach a proper click handler that redirects
+      const btn = document.getElementById("btn_01");
+      if (btn) {
+        btn.addEventListener("click", () => {
+          window.location.href = "viewallappoint.html";
+        });
+      }
+      
+    }
+  </script>
+</body>
+</html>

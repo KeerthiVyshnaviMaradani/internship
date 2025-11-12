@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Approve Appointments</title>
+  <style>
+    :root {
+      --primary: #556ee6;
+      --bg: #f0f4f8;
+      --card: #fff;
+      --muted: #666;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg);
+      margin: 0;
+      min-height: 100vh;
+    }
+
+    /* NAVBAR */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+      background: linear-gradient(90deg, var(--primary), #4751d6);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(21,34,92,0.12);
+      z-index: 1000;
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand {
+      font-weight: 700;
+      font-size: 18px;
+      letter-spacing: 0.2px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 12px;
+      margin-left: 12px;
+    }
+
+    .nav-links a {
+      color: rgba(255,255,255,0.95);
+      text-decoration: none;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .nav-links a:hover {
+      background: rgba(255,255,255,0.07);
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .user-chip {
+      display: inline-block;
+      padding: 6px 10px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 20px;
+      font-size: 13px;
+      color: #fff;
+    }
+
+    .btn-logout {
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .btn-logout:hover {
+      background: rgba(255,255,255,0.18);
+    }
+
+    /* MAIN CONTAINER (push down to avoid overlap with fixed navbar) */
+    .wrapper {
+      padding: 90px 20px 40px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .container {
+      background: var(--card);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      width: 100%;
+      max-width: 950px;
+    }
+
+    h2 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 18px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+    }
+
+    th, td {
+      padding: 12px 15px;
+      text-align: center;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+    }
+
+    th {
+      background-color: var(--primary);
+      color: white;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    tr:nth-child(even) {
+      background-color: #fbfcff;
+    }
+
+    tr:hover {
+      background-color: #f1f6ff;
+    }
+
+    .actions button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      margin: 2px;
+      transition: 0.2s;
+      color: white;
+      font-size: 13px;
+    }
+
+    .approve { background-color: #28a745; }
+    .approve:hover { background-color: #218838; }
+
+    .reject { background-color: #dc3545; }
+    .reject:hover { background-color: #c82333; }
+
+    .status { font-weight: 700; }
+    .muted { color: var(--muted); font-size: 13px; }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-left">
+      <div class="brand">StuTeach Booking</div>
+      <div class="nav-links" aria-label="primary navigation">
+        <a href="approveappoint.html">Appointments</a>
+        <a href="scheduleappoint.html">Students</a>
+      </div>
+    </div>
+
+    <div class="nav-right">
+      <div id="userEmail" class="user-chip">Guest</div>
+      <button id="logoutBtn" class="btn-logout">Logout</button>
+    </div>
+  </nav>
+
+  <div class="wrapper">
+    <div class="container">
+      <h2>📋 Approve Student Appointments</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Student Name</th>
+            <th>Teacher</th>
+            <th>Email</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Actions</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="appointmentTable">
+          <!-- Appointments load here -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDRqIY5_KSXU6FUF23pBr6AJfR9oYu3A_w",
+      authDomain: "stu-teach-booking-appointment.firebaseapp.com",
+      projectId: "stu-teach-booking-appointment",
+      storageBucket: "stu-teach-booking-appointment.appspot.com",
+      messagingSenderId: "911059619353",
+      appId: "1:911059619353:web:3ec6ee920276da87b6a488",
+      measurementId: "G-L0L8ET89ZD"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    const table = document.getElementById("appointmentTable");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const userEmailEl = document.getElementById("userEmail");
+
+    // Show logged-in user email (or Guest)
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        userEmailEl.textContent = user.email || "User";
+      } else {
+        userEmailEl.textContent = "Guest";
+        // Optionally redirect to login if you require auth:
+        // location.href = 'login.html';
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        // After logout, redirect to login page (adjust path as needed)
+        localStorage.removeItem("t_email")
+        location.href = "t_login.html";
+      } catch (err) {
+        console.error("Sign out error:", err);
+        alert("Failed to sign out. Try again.");
+      }
+    });
+
+    // Fetch appointments from Firestore
+    async function loadAppointments() {
+      table.innerHTML = "<tr><td colspan='7'>Loading...</td></tr>";
+      try {
+        const querySnapshot = await getDocs(collection(db, "appointments"));
+        const appointments = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        if (appointments.length === 0) {
+          table.innerHTML = "<tr><td colspan='7'>No Appointments Found</td></tr>";
+          return;
+        }
+
+        table.innerHTML = "";
+        appointments.forEach(app => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${app.name || "Unknown"}</td>
+            <td>${app.name || "N/A"}</td>
+            <td>${app.teacherEmail || "N/A"}</td>
+            <td>${app.date || "-"}</td>
+            <td>${app.time || "-"}</td>
+            <td class="actions">
+              <button class="approve" data-id="${app.id}">Approve</button>
+              <button class="reject" data-id="${app.id}">Reject</button>
+            </td>
+            <td class="status">${app.status || "Pending"}</td>
+          `;
+          table.appendChild(row);
+        });
+
+        // Attach button handlers
+        document.querySelectorAll(".approve").forEach(btn => {
+          btn.addEventListener("click", async (e) => {
+            await updateStatus(e.target.dataset.id, "✅ Approved");
+          });
+        });
+
+        document.querySelectorAll(".reject").forEach(btn => {
+          btn.addEventListener("click", async (e) => {
+            await updateStatus(e.target.dataset.id, "❌ Rejected");
+          });
+        });
+      } catch (err) {
+        console.error(err);
+        table.innerHTML = "<tr><td colspan='7'>Failed to load appointments.</td></tr>";
+      }
+    }
+
+    async function updateStatus(id, newStatus) {
+      try {
+        const docRef = doc(db, "appointments", id);
+        await updateDoc(docRef, { status: newStatus });
+        loadAppointments();
+      } catch (err) {
+        console.error("Update failed:", err);
+        alert("Failed to update status.");
+      }
+    }
+
+    // Initial load
+    loadAppointments();
+  </script>
+
+</body>
+</html>

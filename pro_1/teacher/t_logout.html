@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Log out</title>
+    <meta name="color-scheme" content="light dark">
+    <style>
+        :root{
+            --bg:#f6f8fb; --card:#fff; --muted:#6b7280; --accent1:#6c63ff; --accent2:#00c6ff;
+            --danger:#ef4444; --radius:12px; font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
+        }
+        *{box-sizing:border-box}
+        html,body{height:100%}
+        body{
+            margin:0; background:linear-gradient(180deg,#f8fafc 0%, #eef2ff 100%); color:#0f172a;
+            display:flex; align-items:center; justify-content:center; padding:24px;
+        }
+
+        .card{
+            width:100%; max-width:720px; background:var(--card); border-radius:var(--radius);
+            box-shadow:0 8px 30px rgba(16,24,40,0.08); padding:28px; display:flex; gap:24px; align-items:center;
+        }
+
+        .avatar{
+            width:120px; height:120px; border-radius:16px; background:linear-gradient(135deg,var(--accent1),var(--accent2));
+            display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:36px;
+            box-shadow:0 6px 20px rgba(99,102,241,0.18);
+            flex-shrink:0;
+        }
+
+        .content{flex:1}
+        h1{margin:0 0 6px 0; font-size:20px}
+        p.lead{margin:0 0 14px 0; color:var(--muted)}
+        .meta{font-size:13px;color:var(--muted);margin-bottom:18px}
+
+        .actions{display:flex; gap:12px; align-items:center}
+        button{
+            appearance:none; border:0; padding:10px 16px; border-radius:10px; font-weight:600; cursor:pointer;
+        }
+        .btn-logout{
+            background:linear-gradient(90deg,var(--accent1),var(--accent2)); color:#fff; box-shadow:0 6px 18px rgba(76,71,255,0.14);
+        }
+        .btn-cancel{
+            background:transparent; border:1px solid rgba(15,23,42,0.06); color:var(--muted);
+        }
+        .status{
+            margin-left:8px; font-size:13px; color:var(--muted);
+        }
+
+        .small{
+            margin-top:12px; font-size:13px; color:var(--muted)
+        }
+
+        /* success overlay */
+        .overlay{
+            position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+            background:rgba(2,6,23,0.45); opacity:0; pointer-events:none; transition:opacity .18s;
+        }
+        .overlay.show{opacity:1; pointer-events:auto}
+        .toast{background:linear-gradient(90deg,#ecfeff,#eef2ff); padding:18px 22px; border-radius:12px; color:#044e54; box-shadow:0 10px 30px rgba(2,6,23,0.3);}
+        @media(max-width:560px){
+            .card{flex-direction:column; align-items:center; text-align:center}
+            .avatar{width:96px;height:96px;font-size:28px}
+            .actions{justify-content:center}
+        }
+    </style>
+</head>
+<body>
+    <main class="card" id="card" aria-labelledby="logoutTitle">
+        <!-- content injected by script -->
+    </main>
+
+    <div class="overlay" id="overlay" role="status" aria-hidden="true">
+        <div class="toast" id="toast">You have been signed out — redirecting…</div>
+    </div>
+
+    <script>
+        (function () {
+            const card = document.getElementById('card');
+            const overlay = document.getElementById('overlay');
+            const toast = document.getElementById('toast');
+
+            const email = localStorage.getItem('t_email');
+            if (!email || typeof email !== 'string' || !email.includes('@')) {
+                card.innerHTML = '<h1>Hello</h1>';
+                return;
+            }
+
+            // Render the logout UI
+            card.innerHTML = `
+                <div class="avatar" id="avatar" data-name=""></div>
+                <div class="content">
+                    <h1 id="logoutTitle">Sign out of your account</h1>
+                    <p class="lead">Are you sure you want to sign out? You can sign in again at any time.</p>
+                    <div class="meta" id="meta">Signed in as <strong id="username"></strong></div>
+
+                    <form id="logoutForm" method="POST" action="/logout" data-redirect="/login">
+                        <div class="actions">
+                            <button type="button" class="btn-cancel" id="cancelBtn">Cancel</button>
+                            <button type="submit" class="btn-logout" id="logoutBtn">Log out</button>
+                            <div class="status" id="statusText" aria-live="polite"></div>
+                        </div>
+                        <div class="small">Tip: closing this page will not automatically sign you out on other devices.</div>
+                    </form>
+                </div>
+            `;
+
+            // Elements (now exist)
+            const avatar = document.getElementById('avatar');
+            const usernameEl = document.getElementById('username');
+            const form = document.getElementById('logoutForm');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
+            const statusText = document.getElementById('statusText');
+
+            // Safe initials extraction
+            const localpart = email.split('@')[0] || '';
+            const cleaned = localpart.replace(/[^a-zA-Z0-9]/g, '');
+            const initials = (cleaned.slice(0,2) || 'U').toUpperCase();
+            if (avatar) avatar.textContent = initials;
+            if (usernameEl) usernameEl.textContent = email;
+
+            // Cancel handler
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', () => {
+                    if (history.length > 1) history.back();
+                    else location.href = '/';
+                });
+            }
+
+            // Form submit handler
+            if (form) {
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    if (statusText) statusText.textContent = 'Signing out…';
+                    if (logoutBtn) logoutBtn.disabled = true;
+                    if (cancelBtn) cancelBtn.disabled = true;
+
+                    // Remove local marker immediately
+                    try { localStorage.removeItem('t_email'); } catch(_) {}
+
+                    window.location.href="/teacher/t_login.html"
+
+                    try {
+                        const headers = { 'Accept': 'application/json' };
+                        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                        if (csrfMeta) headers['X-CSRF-Token'] = csrfMeta.getAttribute('content');
+
+                        const resp = await fetch(action, {
+                            method: (form.method || 'POST').toUpperCase(),
+                            credentials: 'same-origin',
+                            headers,
+                        });
+
+                        if (resp.ok) {
+                            overlay.classList.add('show');
+                            overlay.setAttribute('aria-hidden', 'false');
+                            toast.textContent = 'You have been signed out — redirecting…';
+                            setTimeout(() => location.href = redirectTo, 1200);
+                        } else {
+                            // fallback to normal submit
+                            if (statusText) statusText.textContent = 'Sign-out failed — trying fallback.';
+                            setTimeout(() => form.submit(), 600);
+                        }
+                    } catch (err) {
+                        if (statusText) statusText.textContent = 'Network issue — redirecting to server.';
+                        setTimeout(() => form.submit(), 500);
+                    }
+                });
+            }
+        })();
+    </script>
+</body>
+</html>
