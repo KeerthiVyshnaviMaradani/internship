@@ -1,11 +1,100 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Dashboard | Bus Tracking</title>
   <link rel="stylesheet" href="style.css" />
+
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: #f4f7fc;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 700px;
+      background: #fff;
+      margin: 50px auto;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+
+    p {
+      text-align: center;
+      color: #555;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      color: white;
+      background: #007bff;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+
+    th {
+      background: #007bff;
+      color: white;
+      border-radius: 6px;
+    }
+
+    tr:hover {
+      background: #f1f1f1;
+    }
+
+    hr {
+      margin: 25px 0;
+      border: none;
+      border-top: 2px solid #eee;
+    }
+
+    #logoutBtn {
+      background: #dc3545;
+    }
+
+    #logoutBtn:hover {
+      background: #a71d2a;
+    }
+  </style>
 </head>
 
 <body>
@@ -20,10 +109,10 @@
     <hr />
 
     <h3>Registered Drivers</h3>
-    <table border="1" id="driversTable" style="width:100%; border-collapse:collapse;">
+    <table id="driversTable">
       <thead>
         <tr>
-          <th style="border-radius: 10px; padding: 10px; font-family: 'Courier New', Courier, monospace;">Email</th>
+          <th>Email</th>
           <th>Created At</th>
         </tr>
       </thead>
@@ -31,7 +120,8 @@
     </table>
 
     <hr />
-    <button id="logoutBtn" style="background:red;">Logout</button>
+
+    <button id="logoutBtn">Logout</button>
   </div>
 
   <!-- ✅ Firebase + Admin Script -->
@@ -41,21 +131,31 @@
     import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
     import { getFirestore, setDoc, doc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-    // --- 🔥 Your Firebase Config ---
-    import { firebaseConfig } from "../config.js";
+    // --- 🔥 Firebase Config ---
+
+    const firebaseConfig = {
+      apiKey: "",
+      authDomain: "",
+      projectId: "",
+      storageBucket: "",
+      messagingSenderId: "",
+      appId: ""
+    };
 
     // --- Initialize Firebase ---
+
+
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
     // ✅ Create driver
-    document.getElementById("createDriverBtn")?.addEventListener("click", async () => {
+    document.getElementById("createDriverBtn").addEventListener("click", async () => {
       const email = document.getElementById("driverEmail").value.trim();
       const password = document.getElementById("driverPassword").value.trim();
 
       if (!email || !password) {
-        alert("Please fill all fields!");
+        alert("⚠️ Please fill all fields!");
         return;
       }
 
@@ -89,7 +189,7 @@
           const data = docSnap.data();
           const row = document.createElement("tr");
           row.innerHTML = `
-            <td style="border-radius : 10px; padding : 10px">${data.email}</td>
+            <td>${data.email}</td>
             <td>${new Date(data.createdAt).toLocaleString()}</td>
           `;
           driverList.appendChild(row);
@@ -102,16 +202,15 @@
     loadDrivers();
 
     // ✅ Logout
-    document.getElementById("logoutBtn")?.addEventListener("click", async () => {
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
       try {
         await signOut(auth);
-        alert("Logged out successfully!");
+        alert("✅ Logged out successfully!");
         window.location.href = "index.html";
       } catch (err) {
-        alert("Logout failed: " + err.message);
+        alert("❌ Logout failed: " + err.message);
       }
     });
   </script>
 </body>
-
 </html>

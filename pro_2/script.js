@@ -18,7 +18,7 @@ import {
 
 
 // ✅ Firebase Config
-import { firebaseConfig } from "../config.js";
+import { firebaseConfig } from "./config.js";
 
 // ✅ Initialize Firebase
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
